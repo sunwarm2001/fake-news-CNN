@@ -6,7 +6,7 @@
       <change beforePath="$PROJECT_DIR$/GUI_designer/Control.py" beforeDir="false" afterPath="$PROJECT_DIR$/GUI_designer/Control.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/GUI_designer/UI.py" beforeDir="false" afterPath="$PROJECT_DIR$/GUI_designer/UI.py" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/data_process.py" beforeDir="false" afterPath="$PROJECT_DIR$/data_process.py" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/model-CNN.py" beforeDir="false" afterPath="$PROJECT_DIR$/model-CNN.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/model-CNN.py" beforeDir="false" afterPath="$PROJECT_DIR$/model_CNN.py" afterDir="false" />
     </list>
     <option name="EXCLUDED_CONVERTED_TO_IGNORED" value="true" />
     <option name="SHOW_DIALOG" value="false" />
@@ -126,7 +126,7 @@
       <option name="IS_MODULE_SDK" value="true" />
       <option name="ADD_CONTENT_ROOTS" value="true" />
       <option name="ADD_SOURCE_ROOTS" value="true" />
-      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/model-CNN.py" />
+      <option name="SCRIPT_NAME" value="E:\office应用\毕业设计\fake-news-CNN\model_CNN.py" />
       <option name="PARAMETERS" value="" />
       <option name="SHOW_COMMAND_LINE" value="false" />
       <option name="EMULATE_TERMINAL" value="false" />

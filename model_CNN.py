@@ -1,3 +1,4 @@
+from gensim.models import KeyedVectors
 from sklearn.model_selection import train_test_split
 import torch
 import numpy as np
@@ -10,39 +11,14 @@ from sklearn.metrics import classification_report, f1_score
 from data_process import get_embedLookup
 from GUI_designer.Control import  embed_lookup
 #embed_lookup = get_embedLookup()
-pttexts = np.load('./processed_data/pttexts.npy')
-labels = np.load('./processed_data/labels.npy')
 
-split_frac = 0.8
-# split data into training, validation, and test data (tokenized+padded texts and labels, x and y)
-
-train_x, rem_x, train_y, rem_y = train_test_split(pttexts, labels, train_size=split_frac, random_state=1)
-val_x, test_x, val_y, test_y = train_test_split(rem_x, rem_y, test_size=0.5, random_state=1)
-
-# create Tensor datasets
-train_data = TensorDataset(torch.from_numpy(train_x), torch.from_numpy(train_y))
-valid_data = TensorDataset(torch.from_numpy(val_x), torch.from_numpy(val_y))
-test_data = TensorDataset(torch.from_numpy(test_x), torch.from_numpy(test_y))
-print("\t\t\tDatasets Shapes:")
-print("Train set: \t\t{}".format(train_x.shape),
-      "\nValidation set: \t{}".format(val_x.shape),
-      "\nTest set: \t\t{}".format(test_x.shape))
-
-print('\nTest Y balance: {:.3f}'.format(np.sum(test_y)/len(test_y)))
-# dataloaders
-batch_size = 64
-
-# shuffling and batching data
-train_loader = DataLoader(train_data, batch_size=batch_size)
-valid_loader = DataLoader(valid_data, batch_size=batch_size)
-test_loader = DataLoader(test_data, batch_size=batch_size)
 # First checking if GPU is available
-train_on_gpu=torch.cuda.is_available()
-
-if(train_on_gpu):
-    print('Training on GPU.')
-else:
-    print('No GPU available, training on CPU.')
+# train_on_gpu=torch.cuda.is_available()
+#
+# if(train_on_gpu):
+#     print('Training on GPU.')
+# else:
+#     print('No GPU available, training on CPU.')
 
 
 
@@ -119,17 +95,14 @@ class SentimentCNN(nn.Module):
         # sigmoid-activated --> a class score
         return self.sig(logit)
 
-def CNN_model(output_size, num_filters, kernel_sizes):
+def CNN_model(output_size, num_filters, kernel_sizes, dropout):
+    embed_lookup = KeyedVectors.load_word2vec_format(r"E:\Debug\vscode\python\CNN\GoogleNews-vectors-negative300-SLIM.bin", binary=True)
     word = 'news'
     vocab_size = len(embed_lookup)
-    output_size = output_size # binary class (1 or 0)
     embedding_dim = len(embed_lookup[word]) # 300-dim vectors
-
-    num_filters = num_filters
-    kernel_sizes = kernel_sizes
-
+    freeze_embeddings = True
     net = SentimentCNN(embed_lookup, vocab_size, output_size, embedding_dim,
-                       num_filters, kernel_sizes)
+                       num_filters, kernel_sizes, freeze_embeddings, dropout)
     print(net)
     return net
     # loss and optimization functions
@@ -138,17 +111,28 @@ def CNN_model(output_size, num_filters, kernel_sizes):
 
 
 # 开始训练
-def train(net, train_loader, epochs, lr, batch_size):
-
+def train(net, epochs, lr, batch_size):
+    pttexts = np.load(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\pttexts.npy')
+    labels = np.load(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\labels.npy')
+    train_x, rem_x, train_y, rem_y = train_test_split(pttexts, labels, train_size=0.8, random_state=1)
+    val_x, test_x, val_y, test_y = train_test_split(rem_x, rem_y, test_size=0.5, random_state=1)
+    train_data = TensorDataset(torch.from_numpy(train_x), torch.from_numpy(train_y))
+    valid_data = TensorDataset(torch.from_numpy(val_x), torch.from_numpy(val_y))
+    train_loader = DataLoader(train_data, batch_size=batch_size)
+    valid_loader = DataLoader(valid_data, batch_size=batch_size)
+    # create Tensor datasets
+    # train_loader = np.load(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\train_loader.npy', allow_pickle=True)
+    # valid_loader = np.load(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\valid_loader.npy', allow_pickle=True)
     criterion = nn.BCELoss()
     optimizer = torch.optim.Adam(net.parameters(), lr=lr)
     # move model to GPU, if available
+    train_on_gpu = torch.cuda.is_available()
     if (train_on_gpu):
         net.cuda()
 
     counter = 0  # for printing
     print_every =  2 * batch_size
-    # train for some number of epochs
+    # train for some num    ber of epochs
     net.train()
     for e in range(epochs):
 
@@ -215,15 +199,23 @@ def train(net, train_loader, epochs, lr, batch_size):
 #train(net, train_loader, epochs, print_every=print_every)
 
 def test(net_path):
+    pttexts = np.load(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\pttexts.npy')
+    labels = np.load(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\labels.npy')
+    train_x, rem_x, train_y, rem_y = train_test_split(pttexts, labels, train_size=0.8, random_state=1)
+    val_x, test_x, val_y, test_y = train_test_split(rem_x, rem_y, test_size=0.5, random_state=1)
+    test_data = TensorDataset(torch.from_numpy(test_x), torch.from_numpy(test_y))
+    batch_size = 64
+    test_loader = DataLoader(test_data, batch_size=batch_size)
 
     test_losses = []  # track loss
     num_correct = 0
     y_true = []
     y_pred = []
-
+    #test_loader = np.load(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\test_loader.npy', allow_pickle=True)
     net = torch.load(net_path)
     net.eval()
     criterion = nn.BCELoss()
+    train_on_gpu = torch.cuda.is_available()
     for inputs, labels in test_loader:
         y_true = np.append(y_true, labels.numpy())
 

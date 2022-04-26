@@ -2,7 +2,9 @@ import pandas as pd
 import numpy as np
 import re
 from gensim.models import KeyedVectors
-
+from sklearn.model_selection import train_test_split
+import torch
+from torch.utils.data import TensorDataset, DataLoader
 
 def cutsource(s):
     ''' a function to cut out news source in "true" texts
@@ -30,8 +32,8 @@ def cutfactbox(s):
 
     return s
 
+# 处理数据 —— 对数据进行清理
 def get_embedLookup(true_path, fake_path, word_model_path):
-    global  embed_lookup
     true = pd.read_csv(true_path)
     fake = pd.read_csv(fake_path)
     true['text'] = true['text'].astype(str).apply(cutsource)
@@ -100,5 +102,36 @@ def get_embedLookup(true_path, fake_path, word_model_path):
     labels = np.array([0 if label == 'true' else 1 for label in df['label']])
     print("\n padded and tokenized first 11 texts up to first 10 words \n", pttexts[:11, :10])
     print(len(labels), len(pttexts))
+
     np.save(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\pttexts.npy',pttexts)
     np.save(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\labels.npy',labels)
+    print("存储完成")
+    # split data into training, validation, and test data (tokenized+padded texts and labels, x and y)
+    #split_frac = 0.8
+
+def split_data(train_size, test_size, random_state):
+    pttexts = np.load(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\pttexts.npy')
+    labels = np.load(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\labels.npy')
+    train_x, rem_x, train_y, rem_y = train_test_split(pttexts, labels, train_size=train_size, random_state=random_state)
+    val_x, test_x, val_y, test_y = train_test_split(rem_x, rem_y, test_size=test_size, random_state=random_state)
+
+    # create Tensor datasets
+    train_data = TensorDataset(torch.from_numpy(train_x), torch.from_numpy(train_y))
+    valid_data = TensorDataset(torch.from_numpy(val_x), torch.from_numpy(val_y))
+    test_data = TensorDataset(torch.from_numpy(test_x), torch.from_numpy(test_y))
+    print("\t\t\tDatasets Shapes:")
+    print("Train set: \t\t{}".format(train_x.shape),
+          "\nValidation set: \t{}".format(val_x.shape),
+          "\nTest set: \t\t{}".format(test_x.shape))
+
+    print('\nTest Y balance: {:.3f}'.format(np.sum(test_y)/len(test_y)))
+    # dataloaders
+    batch_size = 64
+
+    # shuffling and batching data
+    train_loader = DataLoader(train_data, batch_size=batch_size)
+    valid_loader = DataLoader(valid_data, batch_size=batch_size)
+    test_loader = DataLoader(test_data, batch_size=batch_size)
+    np.save(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\train_loader.npy', train_loader)
+    np.save(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\valid_loader.npy', valid_loader)
+    np.save(r'E:\office应用\毕业设计\fake-news-CNN\processed_data\test_loader.npy', test_loader)

@@ -1,8 +1,11 @@
 from GUI_designer.UI import  *
-from data_process import get_embedLookup
+from data_process import *
+from model_CNN import *
 embed_lookup=''
+flag = 0
+
+# GUI界面——数据处理
 def data_processing():
-    #获取layout：GUI界面——数据处理
     window = sg.Window("基于CNN的虚假信息检测", layout=data_process())
     while True:
         event, values = window.read()
@@ -11,18 +14,26 @@ def data_processing():
         if event == sg.WIN_CLOSED:
             break
         elif event == '处理数据':
-            true = values["true_data"]
-            fake = values["fake_data"]
-            word_model = values["word_model"]
+            true_path = values["true_path"]
+            fake_path = values["fake_path"]
+            word_model_path = values["word_model_path"]
             # print(type(true))
-            # print(type(fake))
-            # print(type(word_model))
             # print("true："+true)
-            # print("fake："+fake)
-            # print("word_model："+word_model)
             print("--------------开始数据处理---------------")
-            embed_lookup = get_embedLookup(true, fake, word_model)
+            get_embedLookup(true_path, fake_path, word_model_path)
             print("--------------数据处理完成---------------")
+            flag = 1
+        elif event == '分割数据' and flag == 0:
+            sg.popup("请先执行数据处理")
+        elif event == '分割数据' and flag == 1:
+            train_size = eval(values["train_size"])
+            test_size = eval(values["test_size"])
+            random_state = eval(values['random_state'])
+            # print(train_size)
+            # print(type(train_size))
+            print("--------------开始分割数据---------------")
+            split_data(train_size, test_size, random_state)
+            print("--------------分割数据完成---------------")
     window.close()
 
 def train_model():
@@ -36,17 +47,20 @@ def train_model():
             epochs = eval(values['epochs'])
             batch_size = eval(values['batch_size'])
             lr = eval(values['lr'])
-            output_size = eval(['output_size'])
-            num_filters = eval(['num_filters'])
-            kernel_sizes = eval(['kernel_sizes'])
-            dropout = eval(['dropout'])
+            output_size = eval(values['output_size'])
+            num_filters = eval(values['num_filters'])
+            kernel_sizes = values['kernel_sizes']
+            kernel_sizes = [int(item) for item in kernel_sizes[1:-1].split(",")]
+            dropout = eval(values['dropout'])
             # print(epochs)
             # print(batch_size)
-            # print(type(epochs))
-            # print(type(batch_size))
-
+            # print(kernel_sizes)
+            # print(type(output_size))
+            # print(type(num_filters))
+            # print(type(kernel_sizes))
+            net = CNN_model(output_size, num_filters, kernel_sizes, dropout)
             print("--------------开始训练模型---------------")
-
+            train(net, epochs, lr, batch_size)
             print("--------------训练模型完成---------------")
     window.close()
 
